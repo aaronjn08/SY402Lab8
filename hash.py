@@ -2,58 +2,67 @@
 #Aaron Noller & Paul Schartung
 #Lab08
 
-
-import datetime
-now = datetime.datetime.now()
-print ("Current date and time : ")
-print (now.strftime("%Y-%m-%d %H:%M:%S"))
-
+# The code was split evenly and discussed via video chat
 
 import os
 import sys
 import hashlib
+import datetime
 
-ignore_list = ['dev', "proc", "run", "sys", "tmp", "var/lib", "var/run"]
+new=[]
+missing=[]
+modified=[]
+old_files={}
+new_files={}
+
+ignore_list = ['dev', "proc", "run", "sys", "tmp", "var/lib", "var/run",".wine"]
+now = datetime.datetime.now()
 
 def main():
    for root, dirs, files in os.walk(".", topdown=True): #from geeksforgeeks.org
-      # if root not in ignore_list:
-#take out ./
 
      for item in ignore_list:
             if item in dirs:
                 dirs.remove(item)
-     print(dirs)
      testlist = root.split("/")
-     print(testlist)
+     gethashes = open("gethashes.txt", "r")
+     gethashes = gethashes.readlines()
+     for line in gethashes:
+         filename=line.split(",")[0]
+         filehash =line.split(",")[2].rstrip("\n")
+         old_files[filename]=filehash
      for directory in testlist:
          if (directory in ignore_list) and (directory in root.split()):
-
-             print("Skipping Directory: ", directory)
+             continue
 
          else:
-             print("Directory being read: ", directory)
-             print("Root: ",root)
-             #######STACK OVERFLOW######
              for f in files:
                  current_file = os.path.join(root,f)
+
+                 if current_file not in old_files:
+                     print("New File: ", current_file)
                  H = hashlib.sha256()
-                 with open(current_file, "rb") as FIN:
-                     H.update(FIN.read())
-                     with open("gethashes.txt", "a+") as myfile:
-                         myfile.write(current_file),myfile.write("\n"),myfile.write("            "),myfile.write(H.hexdigest()),myfile.write("%s\n")
+                 try:
+                     with open(current_file, "rb") as FIN:
+                         H.update(FIN.read())
+                         hash = H.hexdigest()
+                         new_files[current_file]=hash
+                         if old_files[current_file]!=hash:
+                             print("File Changed: ", current_file)
+                        ### Mostly taken from stackoverflow ; strftime is from W3schools###
+                         with open("gethashes.txt", "a+") as myfile:
+                             myfile.write(current_file),myfile.write(","),myfile.write(now.strftime("%Y-%m-%d %H:%M:%S")),myfile.write(","),myfile.write(H.hexdigest()),myfile.write("\n")
 
-            ##############################################
-               # print(dirs)
-               # print(files)
-               # print(hashlib.SHA256( ))
-         print("-----------------------------------------")
+                 except:
+                     print(current_file)
 
-
-#hashlib.SHA256(file)
-
+def compare():
+    for file in old_files:
+        if file not in new_files:
+            print("File missing: ", file)
 
 
 if __name__ == "__main__":
    main()
+   compare()
 
